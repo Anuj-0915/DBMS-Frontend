@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ParkEase – Parking Management System</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Figtree", "system-ui", "sans-serif"],
+              display: ['"Bricolage Grotesque"', "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style type="text/tailwindcss">
+      @layer components {
+        .btn {
+          @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50;
+        }
+        .btn-p {
+          @apply bg-amber-400 text-slate-900 hover:bg-amber-300;
+        }
+        .btn-k {
+          @apply bg-slate-900 text-white hover:bg-slate-700;
+        }
+        .btn-d {
+          @apply bg-rose-600 text-white hover:bg-rose-500;
+        }
+        .btn-s {
+          @apply border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50;
+        }
+        .inp {
+          @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200;
+        }
+        .card {
+          @apply rounded-xl border border-slate-200 bg-white;
+        }
+        .lbl {
+          @apply mb-1 block text-xs font-semibold text-slate-500;
+        }
+      }
+      .bays {
+        background-image: repeating-linear-gradient(
+          90deg,
+          transparent 0 98px,
+          rgba(251, 191, 36, 0.16) 98px 100px
+        );
+        -webkit-mask-image: linear-gradient(#000, transparent 80%);
+        mask-image: linear-gradient(#000, transparent 80%);
+      }
+      .plate {
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        border: 2px solid #1e293b;
+        border-radius: 6px;
+        padding: 1px 7px;
+        background: #fff;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-100 font-sans text-slate-800 antialiased">
+    <div id="app"></div>
+    <div id="m"></div>
+    <script>
+      const $ = (s) => document.querySelector(s),
+        TODAY = () => new Date().toISOString().slice(0, 10),
+        NOW = () => {
+          const d = new Date();
+          d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+          return d.toISOString().slice(0, 16);
+        };
+      const I = {
+        grid: "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z",
+        users:
+          "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+        car: "M5 17H3v-5l2-5h12l3 5h1v5h-2M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0M9 17h6M3 12h18",
+        pin: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4",
+        calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+        card: "M2 5h20v14H2zM2 10h20",
+        alert: "M12 3 2 20h20zM12 10v4M12 17v.5",
+        bell: "M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0",
+        clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2",
+        shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",
+        plus: "M12 5v14M5 12h14",
+        logout: "M9 21H4V3h5M16 17l5-5-5-5M21 12H9",
+        layers: "M12 3 2 8l10 5 10-5zM2 13l10 5 10-5",
+        brief: "M3 7h18v13H3zM8 7V4h8v3",
+        msg: "M3 4h18v13H8l-5 4z",
+        edit: "M4 20h4L19 9l-4-4L4 16z",
+        trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
+        mail: "M3 5h18v14H3zM3 7l9 6 9-6",
+        lock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4",
+        phone:
+          "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2",
+      };
+      const ic = (n, c = "w-5 h-5") =>
+        `<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${I[n]}"/></svg>`;
+      // ---- Schema (mirrors the ER diagram: entity -> primary key + attributes) ----
+      const S = {
+        admins: {
+          k: "Admin_ID",
+          f: [
+            ["Name"],
+            ["Email", "email"],
+            ["Password", "password"],
+            ["Phone", "tel"],
+          ],
+        },
+        users: {
+          k: "User_ID",
+          f: [
+            ["Full_Name"],
+            ["Email", "email"],
+            ["Password", "password"],
+            ["Phone", "tel"],
+            ["Address"],
+            ["Registration_Date", "date"],
+          ],
+        },
+        managers: {
+          k: "Manager_ID",
+          f: [
+            ["Name"],
+            ["Email", "email"],
+            ["Password", "password"],
+            ["Phone", "tel"],
+            ["Assigned_Lot_ID", "fk:lots:Lot_Name"],
+          ],
+        },
+        lots: {
+          k: "Lot_ID",
+          f: [
+            ["Lot_Name"],
+            ["Location"],
+            ["Total_Slots", "auto"],
+            ["Available_Slots", "auto"],
+            ["Opening_Time", "time"],
+            ["Closing_Time", "time"],
+          ],
+        },
+        slots: {
+          k: "Slot_ID",
+          f: [
+            ["Slot_Number"],
+            ["Slot_Type", "sel:Car,Bike,EV,Truck"],
+            ["Floor_Number", "number"],
+            ["Status", "sel:Available,Occupied,Reserved,Maintenance"],
+            ["Lot_ID", "fk:lots:Lot_Name"],
+          ],
+        },
+        vehicles: {
+          k: "Vehicle_ID",
+          f: [
+            ["User_ID", "fk:users:Full_Name"],
+            ["Vehicle_Number"],
+            ["Vehicle_Type", "sel:Car,Bike,EV,Truck"],
+            ["Brand"],
+            ["Model"],
+            ["Color"],
+          ],
+        },
+        bookings: {
+          k: "Booking_ID",
+          f: [
+            ["User_ID", "fk:users:Full_Name"],
+            ["Vehicle_ID", "fk:vehicles:Vehicle_Number"],
+            ["Slot_ID", "fk:slots:Slot_Number"],
+            ["Booking_Date", "date"],
+            ["Entry_Time", "datetime-local"],
+            ["Exit_Time", "datetime-local"],
+            ["Booking_Status", "sel:Booked,Active,Completed,Cancelled"],
+          ],
+        },
+        payments: {
+          k: "Payment_ID",
+          f: [
+            ["Booking_ID", "fk:bookings:Booking_ID"],
+            ["Amount", "number"],
+            ["Payment_Method", "sel:UPI,Card,Cash,Net Banking"],
+            ["Payment_Status", "sel:Pending,Paid,Failed,Refunded"],
+            ["Payment_Date", "date"],
+          ],
+        },
+        fines: {
+          k: "Fine_ID",
+          f: [
+            ["Booking_ID", "fk:bookings:Booking_ID"],
+            ["Reason"],
+            ["Fine_Amount", "number"],
+            ["Payment_Status", "sel:Unpaid,Paid"],
+            ["Fine_Date", "date"],
+          ],
+        },
+        feedback: {
+          k: "Feedback_ID",
+          f: [
+            ["User_ID", "fk:users:Full_Name"],
+            ["Rating", "sel:5,4,3,2,1"],
+            ["Title"],
+            ["Comments", "area"],
+            ["Feedback_Date", "date"],
+          ],
+        },
+        notifications: {
+          k: "Notification_ID",
+          f: [
+            ["User_ID", "fk:users:Full_Name"],
+            ["Title"],
+            ["Message", "area"],
+            ["Date_Time", "datetime-local"],
+            ["Status", "sel:Unread,Read"],
+          ],
+        },
+        history: {
+          k: "History_ID",
+          f: [
+            ["Booking_ID", "fk:bookings:Booking_ID"],
+            ["Entry_Time", "datetime-local"],
+            ["Exit_Time", "datetime-local"],
+            ["Total_Duration"],
+            ["Charges", "number"],
+          ],
+        },
+      };
+      const NV = {
+        dashboard: ["Dashboard", "grid"],
+        book: ["Book parking", "plus"],
+        users: ["Users", "users"],
+        managers: ["Managers", "brief"],
+        admins: ["Admins", "shield"],
+        lots: ["Parking lots", "pin"],
+        slots: ["Parking slots", "layers"],
+        vehicles: ["Vehicles", "car"],
+        bookings: ["Bookings", "calendar"],
+        payments: ["Payments", "card"],
+        fines: ["Fines", "alert"],
+        feedback: ["Feedback", "msg"],
+        notifications: ["Notifications", "bell"],
+        history: ["Parking history", "clock"],
+      };
+      const NAV = {
+        admin: [
+          "dashboard",
+          "users",
+          "managers",
+          "admins",
+          "lots",
+          "slots",
+          "vehicles",
+          "bookings",
+          "payments",
+          "fines",
+          "history",
+          "feedback",
+          "notifications",
+        ],
+        manager: [
+          "dashboard",
+          "lots",
+          "slots",
+          "bookings",
+          "payments",
+          "fines",
+          "history",
+          "notifications",
+        ],
+        user: [
+          "dashboard",
+          "book",
+          "vehicles",
+          "bookings",
+          "payments",
+          "fines",
+          "history",
+          "feedback",
+          "notifications",
+        ],
+      };
+      const P = {
+        manager: {
+          slots: "ced",
+          lots: "e",
+          bookings: "e",
+          payments: "e",
+          fines: "ced",
+          notifications: "c",
+        },
+        user: { vehicles: "ced", feedback: "cd", notifications: "d" },
+      };
+      const MG = ["lots", "slots", "bookings", "payments", "fines", "history"],
+        RATE = { Car: 40, Bike: 20, EV: 60, Truck: 100 },
+        BC = {
+          Available: "emerald",
+          Active: "emerald",
+          Paid: "emerald",
+          Completed: "sky",
+          Occupied: "rose",
+          Unpaid: "rose",
+          Failed: "rose",
+          Cancelled: "slate",
+          Reserved: "amber",
+          Booked: "amber",
+          Pending: "amber",
+          Unread: "amber",
+          Maintenance: "slate",
+          Read: "slate",
+          Refunded: "slate",
+        },
+        DEMO = {
+          admin: ["admin@park.com", "admin123"],
+          manager: ["manager@park.com", "manager123"],
+          user: ["user@park.com", "user123"],
+        };
+      // ---- State & storage ----
+      let DB,
+        me = null,
+        role = null,
+        view = "dashboard",
+        q = "",
+        lrole = "user",
+        reg = false,
+        bk = { lot: 1, veh: 0, slot: 0, inT: NOW(), outT: "" };
+      const KEY = "parkease_v1";
+      function seed() {
+        const slots = [];
+        let id = 1;
+        [
+          [1, "C", 6, "Car", 1],
+          [1, "B", 3, "Bike", 1],
+          [1, "E", 2, "EV", 2],
+          [2, "C", 5, "Car", 1],
+          [2, "T", 2, "Truck", 1],
+        ].forEach(([l, p, n, t, f]) => {
+          for (let i = 1; i <= n; i++)
+            slots.push({
+              Slot_ID: id++,
+              Slot_Number: p + i,
+              Slot_Type: t,
+              Floor_Number: f,
+              Status: "Available",
+              Lot_ID: l,
+            });
+        });
+        slots[9].Status = "Occupied";
+        return {
+          admins: [
+            {
+              Admin_ID: 1,
+              Name: "System Admin",
+              Email: "admin@park.com",
+              Password: "admin123",
+              Phone: "9876500001",
+            },
+          ],
+          managers: [
+            {
+              Manager_ID: 1,
+              Name: "Rahul Sharma",
+              Email: "manager@park.com",
+              Password: "manager123",
+              Phone: "9876500002",
+              Assigned_Lot_ID: 1,
+            },
+          ],
+          users: [
+            {
+              User_ID: 1,
+              Full_Name: "Aisha Khan",
+              Email: "user@park.com",
+              Password: "user123",
+              Phone: "9876500003",
+              Address: "Virar West, Maharashtra",
+              Registration_Date: "2026-01-12",
+            },
+            {
+              User_ID: 2,
+              Full_Name: "Rohan Patil",
+              Email: "rohan@mail.com",
+              Password: "rohan123",
+              Phone: "9876500004",
+              Address: "Vasai East, Maharashtra",
+              Registration_Date: "2026-03-02",
+            },
+          ],
+          lots: [
+            {
+              Lot_ID: 1,
+              Lot_Name: "Central Plaza Parking",
+              Location: "Virar West",
+              Opening_Time: "06:00",
+              Closing_Time: "23:00",
+            },
+            {
+              Lot_ID: 2,
+              Lot_Name: "Station Road Parking",
+              Location: "Virar East",
+              Opening_Time: "00:00",
+              Closing_Time: "23:59",
+            },
+          ],
+          slots,
+          vehicles: [
+            {
+              Vehicle_ID: 1,
+              User_ID: 1,
+              Vehicle_Number: "MH48 AB 1234",
+              Vehicle_Type: "Car",
+              Brand: "Hyundai",
+              Model: "Creta",
+              Color: "White",
+            },
+            {
+              Vehicle_ID: 2,
+              User_ID: 1,
+              Vehicle_Number: "MH48 CD 5678",
+              Vehicle_Type: "Bike",
+              Brand: "Honda",
+              Model: "Activa",
+              Color: "Black",
+            },
+            {
+              Vehicle_ID: 3,
+              User_ID: 2,
+              Vehicle_Number: "MH05 EF 9012",
+              Vehicle_Type: "EV",
+              Brand: "Tata",
+              Model: "Nexon EV",
+              Color: "Blue",
+            },
+          ],
+          bookings: [
+            {
+              Booking_ID: 1,
+              User_ID: 1,
+              Vehicle_ID: 1,
+              Slot_ID: 2,
+              Booking_Date: "2026-10-20",
+              Entry_Time: "2026-10-20T09:00",
+              Exit_Time: "2026-10-20T12:30",
+              Booking_Status: "Completed",
+            },
+            {
+              Booking_ID: 2,
+              User_ID: 2,
+              Vehicle_ID: 3,
+              Slot_ID: 10,
+              Booking_Date: TODAY(),
+              Entry_Time: NOW(),
+              Exit_Time: "",
+              Booking_Status: "Active",
+            },
+          ],
+          payments: [
+            {
+              Payment_ID: 1,
+              Booking_ID: 1,
+              Amount: 160,
+              Payment_Method: "UPI",
+              Payment_Status: "Paid",
+              Payment_Date: "2026-10-20",
+            },
+          ],
+          fines: [
+            {
+              Fine_ID: 1,
+              Booking_ID: 1,
+              Reason: "Overstay beyond booked time",
+              Fine_Amount: 50,
+              Payment_Status: "Unpaid",
+              Fine_Date: "2026-10-20",
+            },
+          ],
+          feedback: [
+            {
+              Feedback_ID: 1,
+              User_ID: 1,
+              Rating: 5,
+              Title: "Smooth experience",
+              Comments: "Easy booking and a clean lot.",
+              Feedback_Date: "2026-10-21",
+            },
+          ],
+          notifications: [
+            {
+              Notification_ID: 1,
+              User_ID: 1,
+              Title: "Fine issued",
+              Message: "A fine of ₹50 was issued for booking #1.",
+              Date_Time: "2026-10-20T13:00",
+              Status: "Unread",
+            },
+          ],
+          history: [
+            {
+              History_ID: 1,
+              Booking_ID: 1,
+              Entry_Time: "2026-10-20T09:00",
+              Exit_Time: "2026-10-20T12:30",
+              Total_Duration: "3h 30m",
+              Charges: 160,
+            },
+          ],
+        };
+      }
+      const load = () => {
+        try {
+          const s = localStorage.getItem(KEY);
+          if (s) return JSON.parse(s);
+        } catch (e) {}
+        return seed();
+      };
+      const sync = () =>
+        DB.lots.forEach((l) => {
+          const s = DB.slots.filter((x) => x.Lot_ID == l.Lot_ID);
+          l.Total_Slots = s.length;
+          l.Available_Slots = s.filter((x) => x.Status == "Available").length;
+        });
+      const save = () => {
+        sync();
+        try {
+          localStorage.setItem(KEY, JSON.stringify(DB));
+        } catch (e) {}
+      };
+      // ---- Helpers ----
+      const g = (e, id) => DB[e].find((r) => r[S[e].k] == id),
+        nid = (e) => Math.max(0, ...DB[e].map((r) => r[S[e].k])) + 1,
+        money = (n) => "₹" + (+n || 0).toLocaleString("en-IN"),
+        fdt = (s) => s.replace("T", " "),
+        esc = (s) =>
+          String(s).replace(
+            /[&<>"]/g,
+            (c) =>
+              ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+          ),
+        ty = (f) => (f[1] || "text").split(":"),
+        can = (e, a) => role == "admin" || (P[role][e] || "").includes(a),
+        lbl = (e, id, f) => {
+          const r = g(e, id);
+          return r ? (f == S[e].k ? "#" + id : r[f]) : "—";
+        },
+        own = (e, r) => {
+          const b = ["payments", "fines", "history"].includes(e)
+            ? g("bookings", r.Booking_ID) || {}
+            : r;
+          return {
+            u: b.User_ID,
+            l:
+              e == "lots" || e == "slots"
+                ? r.Lot_ID
+                : (g("slots", b.Slot_ID) || {}).Lot_ID,
+          };
+        },
+        rows = (e) =>
+          DB[e].filter((r) => {
+            if (role == "admin") return 1;
+            const o = own(e, r);
+            return role == "user"
+              ? o.u == me.User_ID
+              : !MG.includes(e) || o.l == me.Assigned_Lot_ID;
+          }),
+        uidOf = (r) => (g("bookings", r.Booking_ID) || {}).User_ID,
+        notify = (u, t, m) =>
+          DB.notifications.push({
+            Notification_ID: nid("notifications"),
+            User_ID: u,
+            Title: t,
+            Message: m,
+            Date_Time: NOW(),
+            Status: "Unread",
+          }),
+        setSlot = (id, s) => {
+          const x = g("slots", id);
+          if (x) x.Status = s;
+        },
+        plain = (e, f, r) => {
+          const [t, a, b] = ty(f),
+            v = r[f[0]];
+          return t == "fk"
+            ? lbl(a, v, b)
+            : v === "" || v == null
+              ? "—"
+              : t.includes("datetime")
+                ? fdt(v)
+                : v;
+        },
+        toast = (m, bad) => {
+          const t = document.createElement("div");
+          t.className = `fixed bottom-5 right-5 z-[60] rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg ${bad ? "bg-rose-600" : "bg-slate-900"}`;
+          t.textContent = m;
+          document.body.append(t);
+          setTimeout(() => t.remove(), 2600);
+        },
+        modal = (h) => {
+          $("#m").innerHTML =
+            `<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onclick="if(event.target==this)closeM()"><div class="card max-h-[90vh] w-full max-w-lg overflow-auto p-6 shadow-2xl">${h}</div></div>`;
+        },
+        closeM = () => ($("#m").innerHTML = ""),
+        ask = (m, fn) => {
+          window._f = fn;
+          modal(
+            `<p class="mb-5 text-sm">${m}</p><div class="flex justify-end gap-2"><button class="btn btn-s !py-2" onclick="closeM()">Cancel</button><button class="btn btn-d" onclick="closeM();_f()">Confirm</button></div>`,
+          );
+        },
+        go = (v) => {
+          view = v;
+          q = "";
+          render();
+          scrollTo(0, 0);
+        };
+      const cell = (e, f, r) => {
+        const n = f[0],
+          v = r[n],
+          p = plain(e, f, r);
+        if (/Status$/.test(n)) {
+          const c = BC[v] || "slate";
+          return `<span class="rounded-full bg-${c}-100 px-2.5 py-0.5 text-xs font-semibold text-${c}-700">${p}</span>`;
+        }
+        if (n == "Password") return "••••••";
+        if (/Amount|Charges/.test(n)) return money(v);
+        if (n == "Rating")
+          return `<span class="text-amber-500">${"★".repeat(v)}</span>`;
+        if (n == "Vehicle_Number")
+          return `<span class="plate">${esc(p)}</span>`;
+        return esc(p);
+      };
+      // ---- Row actions & business operations ----
+      function acts(e, r) {
+        const id = r[S[e].k],
+          a = [],
+          B = (fn, t, c = "") =>
+            a.push(
+              `<button onclick="${fn}" class="btn btn-s ${c}">${t}</button>`,
+            );
+        if (e == "bookings") {
+          const s = r.Booking_Status;
+          if (s == "Booked") B(`checkin(${id})`, "Check in");
+          if (s == "Booked" || s == "Active") B(`checkout(${id})`, "Check out");
+          if (s == "Booked")
+            B(
+              `ask('Cancel booking #${id}?',()=>cancelB(${id}))`,
+              "Cancel",
+              "!text-rose-600",
+            );
+          if (role != "user" && s != "Cancelled")
+            B(`openForm('fines',0,{Booking_ID:${id}})`, "Issue fine");
+        }
+        if (
+          (e == "payments" && r.Payment_Status == "Pending") ||
+          (e == "fines" && r.Payment_Status == "Unpaid")
+        )
+          B(
+            `pay('${e}',${id})`,
+            "Pay now",
+            "!bg-amber-400 !border-amber-400 font-bold",
+          );
+        if (e == "notifications" && r.Status == "Unread")
+          B(`readN(${id})`, "Mark read");
+        if (can(e, "e")) B(`openForm('${e}',${id})`, ic("edit", "w-3.5 h-3.5"));
+        if (can(e, "d"))
+          B(
+            `ask('Delete this record?',()=>del('${e}',${id}))`,
+            ic("trash", "w-3.5 h-3.5"),
+            "!text-rose-600",
+          );
+        return a.join("");
+      }
+      function checkin(id) {
+        const b = g("bookings", id);
+        b.Booking_Status = "Active";
+        b.Entry_Time = NOW();
+        setSlot(b.Slot_ID, "Occupied");
+        save();
+        toast("Vehicle checked in");
+        render();
+      }
+      function cancelB(id) {
+        const b = g("bookings", id);
+        b.Booking_Status = "Cancelled";
+        setSlot(b.Slot_ID, "Available");
+        notify(b.User_ID, "Booking cancelled", `Booking #${id} was cancelled.`);
+        save();
+        toast("Booking cancelled");
+        render();
+      }
+      function checkout(id) {
+        const b = g("bookings", id);
+        b.Exit_Time = NOW();
+        b.Booking_Status = "Completed";
+        setSlot(b.Slot_ID, "Available");
+        const mins = Math.max(
+            1,
+            Math.round((new Date(b.Exit_Time) - new Date(b.Entry_Time)) / 6e4),
+          ),
+          amt =
+            Math.ceil(mins / 60) *
+            (RATE[g("slots", b.Slot_ID).Slot_Type] || 40);
+        DB.history.push({
+          History_ID: nid("history"),
+          Booking_ID: id,
+          Entry_Time: b.Entry_Time,
+          Exit_Time: b.Exit_Time,
+          Total_Duration: Math.floor(mins / 60) + "h " + (mins % 60) + "m",
+          Charges: amt,
+        });
+        DB.payments.push({
+          Payment_ID: nid("payments"),
+          Booking_ID: id,
+          Amount: amt,
+          Payment_Method: "UPI",
+          Payment_Status: "Pending",
+          Payment_Date: "",
+        });
+        notify(
+          b.User_ID,
+          "Payment due",
+          `Parking for booking #${id} cost ${money(amt)}. Please pay to complete.`,
+        );
+        save();
+        toast("Checked out · " + money(amt) + " due");
+        render();
+      }
+      function pay(e, id) {
+        const r = g(e, id);
+        modal(
+          `<h3 class="mb-3 font-display text-lg font-bold">Confirm payment</h3><p class="mb-4 text-sm text-slate-500">Amount due: <b class="text-slate-900">${money(r.Amount ?? r.Fine_Amount)}</b></p>${e == "payments" ? `<label class="lbl">Payment method</label><select id="pm" class="inp mb-4">${["UPI", "Card", "Cash", "Net Banking"].map((x) => `<option>${x}</option>`).join("")}</select>` : ""}<div class="flex justify-end gap-2"><button class="btn btn-s !py-2" onclick="closeM()">Cancel</button><button class="btn btn-p" onclick="doPay('${e}',${id})">Pay now</button></div>`,
+        );
+      }
+      function doPay(e, id) {
+        const r = g(e, id);
+        r.Payment_Status = "Paid";
+        if (e == "payments") {
+          r.Payment_Method = $("#pm").value;
+          r.Payment_Date = TODAY();
+        }
+        notify(
+          uidOf(r),
+          "Payment received",
+          `${money(r.Amount ?? r.Fine_Amount)} received for booking #${r.Booking_ID}.`,
+        );
+        closeM();
+        save();
+        toast("Payment successful");
+        render();
+      }
+      function readN(id) {
+        g("notifications", id).Status = "Read";
+        save();
+        render();
+      }
+      function del(e, id) {
+        DB[e] = DB[e].filter((r) => r[S[e].k] != id);
+        if (e == "bookings")
+          ["payments", "fines", "history"].forEach(
+            (x) => (DB[x] = DB[x].filter((r) => r.Booking_ID != id)),
+          );
+        save();
+        toast("Record deleted");
+        render();
+      }
+      // ---- Generic add / edit form ----
+      function openForm(e, id, pre = {}) {
+        const s = S[e],
+          r = id ? g(e, id) : { ...pre };
+        if (!id && role == "manager" && e == "slots")
+          r.Lot_ID = me.Assigned_Lot_ID;
+        const fs = s.f.filter(
+            (f) => f[1] != "auto" && !(role == "user" && f[0] == "User_ID"),
+          ),
+          inp = (f) => {
+            const [t, a, b] = ty(f),
+              n = f[0],
+              v =
+                r[n] ??
+                (t == "date"
+                  ? TODAY()
+                  : t == "datetime-local" && n != "Exit_Time"
+                    ? NOW()
+                    : "");
+            if (t == "fk")
+              return `<select name="${n}" class="inp">${DB[a].map((x) => `<option value="${x[S[a].k]}" ${x[S[a].k] == v ? "selected" : ""}>${esc(b == S[a].k ? "#" + x[b] : x[b])}</option>`).join("")}</select>`;
+            if (t == "sel")
+              return `<select name="${n}" class="inp">${a
+                .split(",")
+                .map((o) => `<option ${o == v ? "selected" : ""}>${o}</option>`)
+                .join("")}</select>`;
+            if (t == "area")
+              return `<textarea name="${n}" rows="3" class="inp" required>${esc(v)}</textarea>`;
+            return `<input name="${n}" type="${t}" value="${esc(v)}" class="inp" ${t == "number" ? 'step="any"' : ""} ${/Exit|Payment_Date/.test(n) ? "" : "required"}>`;
+          };
+        modal(
+          `<form onsubmit="return saveF(event,'${e}',${id || 0})"><h3 class="mb-4 font-display text-lg font-bold">${id ? "Edit" : "Add"} · ${NV[e][0]}</h3><div class="grid gap-3 sm:grid-cols-2">${fs.map((f) => `<div class="${ty(f)[0] == "area" ? "sm:col-span-2" : ""}"><label class="lbl">${f[0].replace(/_/g, " ")}</label>${inp(f)}</div>`).join("")}</div><div class="mt-5 flex justify-end gap-2"><button type="button" class="btn btn-s !py-2" onclick="closeM()">Cancel</button><button class="btn btn-p">Save changes</button></div></form>`,
+        );
+      }
+      function saveF(ev, e, id) {
+        ev.preventDefault();
+        const o = Object.fromEntries(new FormData(ev.target)),
+          s = S[e];
+        s.f.forEach((f) => {
+          if (
+            f[0] in o &&
+            (ty(f)[0] == "number" || ty(f)[0] == "fk" || f[0] == "Rating")
+          )
+            o[f[0]] = +o[f[0]];
+        });
+        if (role == "user" && s.f.some((f) => f[0] == "User_ID"))
+          o.User_ID = me.User_ID;
+        if (id) Object.assign(g(e, id), o);
+        else {
+          o[s.k] = nid(e);
+          DB[e].push(o);
+        }
+        if (e == "fines" && !id)
+          notify(
+            uidOf(o),
+            "Fine issued",
+            `A fine of ${money(o.Fine_Amount)} was issued for booking #${o.Booking_ID}: ${o.Reason}.`,
+          );
+        if (e == "bookings") {
+          const b = id ? g(e, id) : o;
+          setSlot(
+            b.Slot_ID,
+            { Booked: "Reserved", Active: "Occupied" }[b.Booking_Status] ||
+              "Available",
+          );
+        }
+        closeM();
+        save();
+        toast(id ? "Changes saved" : "Record added");
+        render();
+        return false;
+      }
+      function csv(e) {
+        const s = S[e],
+          fs = s.f.filter((f) => f[0] != "Password"),
+          l = [
+            [s.k, ...fs.map((f) => f[0])],
+            ...rows(e).map((r) => [r[s.k], ...fs.map((f) => plain(e, f, r))]),
+          ]
+            .map((a) =>
+              a.map((x) => '"' + String(x).replace(/"/g, '""') + '"').join(","),
+            )
+            .join("\n"),
+          a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([l], { type: "text/csv" }));
+        a.download = e + ".csv";
+        a.click();
+      }
+      // ---- Pages ----
+      function tbl(e) {
+        const s = S[e],
+          L = rows(e).filter(
+            (r) =>
+              !q ||
+              s.f
+                .map((f) => plain(e, f, r))
+                .join(" ")
+                .toLowerCase()
+                .includes(q),
+          );
+        if (!L.length)
+          return `<div class="p-14 text-center text-sm text-slate-400">No records yet. ${can(e, "c") ? "Use “Add new” to create the first one." : ""}</div>`;
+        return `<div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-slate-50 text-xs font-semibold text-slate-500"><tr><th class="px-4 py-3">ID</th>${s.f.map((f) => `<th class="whitespace-nowrap px-4 py-3">${f[0].replace(/_/g, " ")}</th>`).join("")}<th></th></tr></thead><tbody class="divide-y divide-slate-100 text-sm">${L.map((r) => `<tr class="hover:bg-amber-50/40"><td class="px-4 py-3 text-xs font-semibold text-slate-400">#${r[s.k]}</td>${s.f.map((f) => `<td class="px-4 py-3 ${ty(f)[0] == "area" ? "max-w-[240px] truncate" : "whitespace-nowrap"}">${cell(e, f, r)}</td>`).join("")}<td class="px-4 py-3"><div class="flex justify-end gap-1.5">${acts(e, r)}</div></td></tr>`).join("")}</tbody></table></div>`;
+      }
+      const pageEnt = (e) =>
+        `<div class="mb-5 flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-display text-3xl font-bold">${NV[e][0]}</h1><p class="text-sm text-slate-500">${rows(e).length} records</p></div><div class="flex flex-wrap gap-2"><input oninput="q=this.value.toLowerCase();$('#tb').innerHTML=tbl('${e}')" placeholder="Search records" class="inp !w-52"><button class="btn btn-s !py-2" onclick="csv('${e}')">Export CSV</button>${can(e, "c") ? `<button class="btn btn-p" onclick="openForm('${e}')">${ic("plus", "w-4 h-4")} Add new</button>` : ""}</div></div><div class="card overflow-hidden" id="tb">${tbl(e)}</div>`;
+      function pageDash() {
+        const R = rows,
+          act = R("bookings").filter((b) =>
+            ["Active", "Booked"].includes(b.Booking_Status),
+          ).length,
+          rev = R("payments")
+            .filter((p) => p.Payment_Status == "Paid")
+            .reduce((a, p) => a + p.Amount, 0),
+          due =
+            R("payments")
+              .filter((p) => p.Payment_Status == "Pending")
+              .reduce((a, p) => a + p.Amount, 0) +
+            R("fines")
+              .filter((f) => f.Payment_Status == "Unpaid")
+              .reduce((a, f) => a + f.Fine_Amount, 0),
+          st =
+            role == "user"
+              ? [
+                  ["My vehicles", R("vehicles").length, "car"],
+                  ["Active bookings", act, "calendar"],
+                  ["Outstanding dues", money(due), "alert"],
+                  [
+                    "Unread alerts",
+                    R("notifications").filter((n) => n.Status == "Unread")
+                      .length,
+                    "bell",
+                  ],
+                ]
+              : [
+                  [
+                    role == "admin" ? "Registered users" : "Parking slots",
+                    role == "admin" ? DB.users.length : R("slots").length,
+                    role == "admin" ? "users" : "layers",
+                  ],
+                  ["Active bookings", act, "calendar"],
+                  ["Revenue collected", money(rev), "card"],
+                  ["Outstanding dues", money(due), "alert"],
+                ];
+        const lots = (role == "user" ? DB.lots : R("lots"))
+          .map((l) => {
+            const u = l.Total_Slots - l.Available_Slots,
+              p = l.Total_Slots ? Math.round((u / l.Total_Slots) * 100) : 0,
+              c = p > 85 ? "rose" : p > 60 ? "amber" : "emerald";
+            return `<div><div class="mb-1.5 flex justify-between text-sm"><span class="font-semibold">${esc(l.Lot_Name)}</span><span class="text-slate-500">${l.Available_Slots} of ${l.Total_Slots} free</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-2.5 rounded-full bg-${c}-500" style="width:${p}%"></div></div><div class="mt-1 text-xs text-slate-400">${esc(l.Location)} · ${l.Opening_Time}–${l.Closing_Time}</div></div>`;
+          })
+          .join("");
+        const rec =
+          R("bookings")
+            .slice(-5)
+            .reverse()
+            .map(
+              (b) =>
+                `<div class="flex items-center justify-between py-2.5"><div><span class="plate">${lbl("vehicles", b.Vehicle_ID, "Vehicle_Number")}</span><span class="ml-2 text-xs text-slate-500">Slot ${lbl("slots", b.Slot_ID, "Slot_Number")} · #${b.Booking_ID}</span></div>${cell("bookings", ["Booking_Status"], b)}</div>`,
+            )
+            .join("") ||
+          '<p class="py-6 text-center text-sm text-slate-400">No bookings yet</p>';
+        return `<div class="mb-6 flex flex-wrap items-end justify-between gap-3"><div><h1 class="font-display text-3xl font-bold">Hello, ${esc((me.Full_Name || me.Name).split(" ")[0])}</h1><p class="text-sm text-slate-500">Here is what is happening across ${role == "manager" ? "your lot" : "the parking network"} today.</p></div>${role == "user" ? `<button class="btn btn-p" onclick="go('book')">${ic("plus", "w-4 h-4")} Book a slot</button>` : ""}</div>
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">${st.map(([l, v, i]) => `<div class="card flex items-center gap-4 p-5"><div class="grid h-12 w-12 place-items-center rounded-lg bg-slate-900 text-amber-400">${ic(i, "w-6 h-6")}</div><div><div class="font-display text-2xl font-bold">${v}</div><div class="text-xs font-medium text-slate-500">${l}</div></div></div>`).join("")}</div>
+<div class="mt-5 grid gap-5 lg:grid-cols-5"><div class="card space-y-5 p-5 lg:col-span-3"><h2 class="font-display text-lg font-bold">Lot occupancy</h2>${lots || '<p class="text-sm text-slate-400">No lots available.</p>'}</div><div class="card p-5 lg:col-span-2"><h2 class="font-display text-lg font-bold">Recent bookings</h2><div class="divide-y divide-slate-100">${rec}</div></div></div>`;
+      }
+      function pageBook() {
+        const vs = DB.vehicles.filter((v) => v.User_ID == me.User_ID);
+        if (!vs.length)
+          return `<div class="card p-14 text-center"><p class="mb-4 text-slate-500">Add a vehicle before you book a slot.</p><button class="btn btn-p" onclick="go('vehicles')">Add a vehicle</button></div>`;
+        if (!vs.some((v) => v.Vehicle_ID == bk.veh)) bk.veh = vs[0].Vehicle_ID;
+        const v = g("vehicles", bk.veh),
+          sl = DB.slots.filter((s) => s.Lot_ID == bk.lot),
+          pick = g("slots", bk.slot),
+          slot = (s) => {
+            const ok = s.Status == "Available" && s.Slot_Type == v.Vehicle_Type,
+              c =
+                s.Slot_ID == bk.slot
+                  ? "bg-amber-400 border-amber-500 text-slate-900"
+                  : ok
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                    : s.Status == "Occupied"
+                      ? "bg-rose-50 border-rose-200 text-rose-400"
+                      : "bg-slate-100 border-slate-200 text-slate-400";
+            return `<button ${ok ? "" : "disabled"} onclick="bk.slot=${s.Slot_ID};render()" class="rounded-lg border-2 p-3 text-center transition ${c} ${ok ? "" : "cursor-not-allowed"}"><div class="font-display text-base font-bold">${s.Slot_Number}</div><div class="text-[11px]">${s.Slot_Type}</div></button>`;
+          };
+        return `<h1 class="font-display text-3xl font-bold">Book parking</h1><p class="mb-5 text-sm text-slate-500">Pick a lot, choose a free slot that fits your vehicle, then confirm.</p>
+<div class="grid gap-5 lg:grid-cols-3"><div class="card p-5 lg:col-span-2"><div class="mb-4 grid gap-2 sm:grid-cols-2">${DB.lots.map((l) => `<button onclick="bk.lot=${l.Lot_ID};bk.slot=0;render()" class="rounded-lg border-2 p-3 text-left ${l.Lot_ID == bk.lot ? "border-amber-400 bg-amber-50" : "border-slate-200"}"><div class="font-semibold">${esc(l.Lot_Name)}</div><div class="text-xs text-slate-500">${esc(l.Location)} · ${l.Available_Slots}/${l.Total_Slots} free · ${l.Opening_Time}–${l.Closing_Time}</div></button>`).join("")}</div>
+${[...new Set(sl.map((s) => s.Floor_Number))]
+  .sort()
+  .map(
+    (f) =>
+      `<div class="mb-2 mt-4 text-sm font-semibold text-slate-500">Floor ${f}</div><div class="grid grid-cols-3 gap-2 sm:grid-cols-6">${sl
+        .filter((s) => s.Floor_Number == f)
+        .map(slot)
+        .join("")}</div>`,
+  )
+  .join("")}
+<div class="mt-5 flex flex-wrap gap-4 text-xs text-slate-500"><span>🟩 Free for your vehicle</span><span>🟥 Occupied</span><span>⬜ Reserved, other type or maintenance</span></div></div>
+<div class="card h-fit space-y-4 p-5"><h2 class="font-display text-lg font-bold">Your booking</h2>
+<div><label class="lbl">Vehicle</label><select class="inp" onchange="bk.veh=+this.value;bk.slot=0;render()">${vs.map((x) => `<option value="${x.Vehicle_ID}" ${x.Vehicle_ID == bk.veh ? "selected" : ""}>${esc(x.Vehicle_Number)} · ${x.Vehicle_Type}</option>`).join("")}</select></div>
+<div><label class="lbl">Entry time</label><input type="datetime-local" class="inp" value="${bk.inT}" onchange="bk.inT=this.value"></div>
+<div><label class="lbl">Expected exit (optional)</label><input type="datetime-local" class="inp" value="${bk.outT}" onchange="bk.outT=this.value"></div>
+<div class="rounded-lg bg-slate-50 p-3 text-sm"><div class="flex justify-between"><span class="text-slate-500">Slot</span><b>${pick ? pick.Slot_Number + " · Floor " + pick.Floor_Number : "Not selected"}</b></div><div class="mt-1 flex justify-between"><span class="text-slate-500">Rate</span><b>${money(RATE[v.Vehicle_Type])} / hour</b></div></div>
+<button class="btn btn-p w-full" onclick="confirmBook()">Confirm booking</button></div></div>`;
+      }
+      function confirmBook() {
+        if (!bk.slot) return toast("Select a free slot first", 1);
+        if (!bk.inT) return toast("Choose an entry time", 1);
+        const id = nid("bookings");
+        DB.bookings.push({
+          Booking_ID: id,
+          User_ID: me.User_ID,
+          Vehicle_ID: bk.veh,
+          Slot_ID: bk.slot,
+          Booking_Date: TODAY(),
+          Entry_Time: bk.inT,
+          Exit_Time: bk.outT,
+          Booking_Status: "Booked",
+        });
+        setSlot(bk.slot, "Reserved");
+        notify(
+          me.User_ID,
+          "Booking confirmed",
+          `Booking #${id} confirmed for slot ${g("slots", bk.slot).Slot_Number}.`,
+        );
+        bk.slot = 0;
+        save();
+        toast("Booking confirmed");
+        go("bookings");
+      }
+      // ---- Auth ----
+      function login(ev) {
+        ev.preventDefault();
+        const f = Object.fromEntries(new FormData(ev.target)),
+          r = DB[
+            { admin: "admins", manager: "managers", user: "users" }[lrole]
+          ].find(
+            (x) =>
+              x.Email.toLowerCase() == f.Email.toLowerCase() &&
+              x.Password == f.Password,
+          );
+        if (!r) {
+          toast("Email or password is incorrect", 1);
+          return false;
+        }
+        me = r;
+        role = lrole;
+        view = "dashboard";
+        render();
+        return false;
+      }
+      function register(ev) {
+        ev.preventDefault();
+        const f = Object.fromEntries(new FormData(ev.target));
+        if (
+          DB.users.some((u) => u.Email.toLowerCase() == f.Email.toLowerCase())
+        ) {
+          toast("This email is already registered", 1);
+          return false;
+        }
+        const u = { User_ID: nid("users"), ...f, Registration_Date: TODAY() };
+        DB.users.push(u);
+        save();
+        me = u;
+        role = "user";
+        view = "dashboard";
+        render();
+        toast("Welcome to ParkEase");
+        return false;
+      }
+      const fill = () => {
+        const f = document.forms[0];
+        f.Email.value = DEMO[lrole][0];
+        f.Password.value = DEMO[lrole][1];
+      };
+      function loginHTML() {
+        const R = {
+            admin: ["Admin", "shield"],
+            manager: ["Manager", "brief"],
+            user: ["Driver", "car"],
+          },
+          fld = (n, l, i, t = "text") =>
+            `<div><label class="lbl">${l}</label><div class="relative"><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">${ic(i, "w-4 h-4")}</span><input name="${n}" type="${t}" required class="inp !py-2.5 !pl-9"></div></div>`,
+          fr = DB.slots.filter((s) => s.Status == "Available").length,
+          tt = DB.slots.length,
+          pc = tt ? Math.round((fr / tt) * 100) : 0,
+          logo = (c) =>
+            `<div class="flex items-center gap-3"><div class="grid h-10 w-10 place-items-center rounded-lg bg-amber-400 font-display text-xl font-extrabold text-slate-900">P</div><span class="font-display text-xl font-bold ${c}">ParkEase</span></div>`,
+          car = (x, c) =>
+            `<rect x="${x}" y="46" width="64" height="104" rx="16" fill="${c}"/><rect x="${x + 8}" y="58" width="48" height="24" rx="7" fill="#0f172a" opacity=".55"/><rect x="${x + 8}" y="112" width="48" height="16" rx="6" fill="#0f172a" opacity=".25"/>`;
+        return `<div class="grid min-h-screen lg:grid-cols-5"><div class="relative hidden overflow-hidden bg-slate-900 text-white lg:col-span-3 lg:flex lg:flex-col lg:justify-between"><div class="bays absolute inset-0"></div><div class="absolute -left-20 top-1/3 h-96 w-96 rounded-full bg-amber-400/15 blur-3xl"></div>
+<div class="relative p-12">${logo("text-white")}</div>
+<div class="relative px-12"><h1 class="max-w-lg font-display text-6xl font-extrabold leading-[1.02]">Every car has a bay waiting.</h1><p class="mt-5 max-w-md text-lg text-slate-300">Book a slot, track your stay and pay in one place. Admins and lot managers get the full picture.</p>
+<div class="mt-8 w-80 rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur"><div class="flex items-center justify-between text-sm"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span>Live availability</span><b>${fr} of ${tt} free</b></div><div class="mt-3 h-2 rounded-full bg-white/15"><div class="h-2 rounded-full bg-amber-400" style="width:${pc}%"></div></div></div></div>
+<svg viewBox="0 0 600 150" class="relative mt-10 block w-full"><path d="M0 24h600M0 24v126M100 24v126M200 24v126M300 24v126M400 24v126M500 24v126M600 24v126" stroke="#fbbf24" stroke-width="3" opacity=".6" fill="none"/>${car(118, "#fbbf24")}${car(318, "#f8fafc")}${car(418, "#38bdf8")}</svg></div>
+<div class="flex items-center justify-center bg-gradient-to-br from-slate-100 to-amber-50 p-6 lg:col-span-2"><div class="w-full max-w-md"><div class="mb-6 lg:hidden">${logo("text-slate-900")}</div>
+<div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-300/40"><h2 class="font-display text-3xl font-bold">${reg ? "Create your account" : "Welcome back"}</h2><p class="mb-6 mt-1 text-sm text-slate-500">${reg ? "Register as a driver to start booking." : "Sign in with your role to continue."}</p>
+${
+  reg
+    ? ""
+    : `<div class="mb-5 grid grid-cols-3 rounded-lg bg-slate-100 p-1">${Object.entries(
+        R,
+      )
+        .map(
+          ([k, [v, i]]) =>
+            `<button onclick="lrole='${k}';render()" class="flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition ${lrole == k ? "bg-slate-900 text-amber-400 shadow" : "text-slate-500 hover:text-slate-900"}">${ic(i, "w-4 h-4")}${v}</button>`,
+        )
+        .join("")}</div>`
+}
+<form onsubmit="return ${reg ? "register" : "login"}(event)" class="space-y-4">${reg ? fld("Full_Name", "Full name", "users") + fld("Phone", "Phone", "phone", "tel") + fld("Address", "Address", "pin") : ""}${fld("Email", "Email", "mail", "email")}${fld("Password", "Password", "lock", "password")}<button class="btn btn-p w-full !py-3 text-base shadow-lg shadow-amber-200">${reg ? "Create account" : "Sign in"}</button></form>
+${reg ? "" : `<button type="button" onclick="fill()" class="mt-4 flex w-full items-center justify-between rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2.5 text-left text-sm hover:bg-amber-100"><span><b class="block">Try the demo ${R[lrole][0].toLowerCase()}</b><span class="text-xs text-slate-500">${DEMO[lrole][0]} · ${DEMO[lrole][1]}</span></span><span class="font-semibold text-amber-700">Fill in</span></button>`}
+${lrole == "user" || reg ? `<p class="mt-5 text-center text-sm text-slate-500">${reg ? "Already registered?" : "New driver?"} <button class="font-semibold text-slate-900 underline" onclick="reg=!reg;lrole='user';render()">${reg ? "Sign in" : "Create an account"}</button></p>` : ""}</div>
+<p class="mt-5 text-center text-xs text-slate-400">Smart Parking Management System</p></div></div></div>`;
+      }
+      // ---- Shell ----
+      function render() {
+        sync();
+        const app = $("#app");
+        if (!me) {
+          app.innerHTML = loginHTML();
+          return;
+        }
+        const un = rows("notifications").filter(
+            (n) => n.Status == "Unread",
+          ).length,
+          nm = me.Full_Name || me.Name;
+        app.innerHTML = `<div class="flex min-h-screen"><aside id="sb" class="fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 -translate-x-full flex-col bg-slate-900 p-4 text-slate-300 transition md:sticky md:top-0 md:h-screen md:translate-x-0">
+<div class="mb-6 flex items-center gap-3 px-2 pt-2"><div class="grid h-9 w-9 place-items-center rounded-lg bg-amber-400 font-display text-lg font-extrabold text-slate-900">P</div><span class="font-display text-lg font-bold text-white">ParkEase</span></div>
+<nav class="flex-1 space-y-0.5 overflow-y-auto">${NAV[role].map((k) => `<button onclick="go('${k}')" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${view == k ? "bg-amber-400 text-slate-900" : "hover:bg-white/10"}">${ic(NV[k][1], "w-[18px] h-[18px]")}${NV[k][0]}${k == "notifications" && un ? `<span class="ml-auto rounded-full bg-rose-500 px-1.5 text-[11px] text-white">${un}</span>` : ""}</button>`).join("")}</nav>
+<button class="mt-3 px-3 py-2 text-left text-xs text-slate-500 hover:text-slate-300" onclick="ask('Reset all data to the demo set?',()=>{try{localStorage.removeItem(KEY)}catch(e){}DB=seed();render()})">Reset demo data</button></aside>
+<main class="min-w-0 flex-1"><header class="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/90 px-5 py-3 backdrop-blur md:px-8"><button class="md:hidden" onclick="$('#sb').classList.toggle('-translate-x-full')" aria-label="Menu"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div class="hidden text-sm text-slate-500 md:block">${new Date().toDateString()}</div>
+<div class="flex items-center gap-3"><div class="text-right leading-tight"><div class="text-sm font-semibold">${esc(nm)}</div><div class="text-xs text-slate-500">${{ admin: "Administrator", manager: "Parking manager", user: "Driver" }[role]}</div></div><div class="grid h-9 w-9 place-items-center rounded-full bg-slate-900 font-bold text-amber-400">${esc(nm[0])}</div><button class="btn btn-s !py-1.5" onclick="me=null;role=null;render()">${ic("logout", "w-4 h-4")} Log out</button></div></header>
+<section class="p-5 md:p-8">${view == "dashboard" ? pageDash() : view == "book" ? pageBook() : pageEnt(view)}</section></main></div>`;
+      }
+      DB = load();
+      sync();
+      render();
+    </script>
+  </body>
+</html>
