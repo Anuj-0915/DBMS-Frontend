@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EV Charging Slot Allocation System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #07090d;
+        --card: #0d1016;
+        --card2: #11151d;
+        --line: #1f2632;
+        --ink: #e9eef6;
+        --mut: #8791a5;
+        --teal: #2ee6c5;
+        --blue: #5b8cff;
+        --vio: #8f7cff;
+        --red: #ff6b7a;
+        --amber: #f5b94a;
+        --grad: linear-gradient(110deg, #2ee6c5 0%, #5b8cff 65%, #8f7cff 100%);
+        color-scheme: dark;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.55 "Plus Jakarta Sans",
+          "Segoe UI",
+          system-ui,
+          sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 28px;
+      }
+      label,
+      h2,
+      th,
+      .crumb,
+      .kpi span,
+      .lbl,
+      .tag,
+      .chip,
+      .pill,
+      .status {
+        font-family: "JetBrains Mono", Consolas, monospace;
+      }
+
+      /* Navigation */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(7, 9, 13, 0.82);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .nav .wrap {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        height: 70px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 19px;
+        font-weight: 800;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .logo {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: var(--grad);
+        box-shadow: 0 0 22px rgba(46, 230, 197, 0.35);
+      }
+      .links {
+        display: flex;
+        gap: 24px;
+        margin-right: auto;
+      }
+      .links a {
+        color: #c3cbd9;
+        font-weight: 500;
+        text-decoration: none;
+      }
+      .links a:hover {
+        color: #fff;
+      }
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        color: var(--mut);
+        font-size: 13px;
+      }
+      .pill b {
+        color: var(--ink);
+        font-weight: 500;
+        font-size: 15px;
+      }
+
+      /* Hero */
+      .hero {
+        padding: 54px 0 50px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background:
+          radial-gradient(
+            55% 130% at 10% 100%,
+            rgba(46, 230, 197, 0.15),
+            transparent 62%
+          ),
+          radial-gradient(
+            45% 130% at 96% 55%,
+            rgba(143, 124, 255, 0.18),
+            transparent 62%
+          );
+      }
+      .crumb {
+        font-size: 12.5px;
+        color: var(--mut);
+      }
+      .crumb span {
+        margin: 0 8px;
+      }
+      h1 {
+        margin: 22px 0 14px;
+        font-size: clamp(34px, 5.2vw, 58px);
+        font-weight: 800;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+      }
+      h1 em {
+        font-style: normal;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero p {
+        max-width: 640px;
+        margin: 0;
+        font-size: 17px;
+        color: var(--mut);
+      }
+
+      main {
+        padding: 34px 0 120px;
+      }
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        margin-bottom: 24px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--card);
+      }
+      .kpi {
+        padding: 16px 20px;
+        border-right: 1px solid var(--line);
+      }
+      .kpi:last-child {
+        border-right: 0;
+      }
+      .kpi span {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--mut);
+      }
+      .kpi b {
+        font-size: 26px;
+        font-weight: 700;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 330px 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      aside,
+      .col {
+        display: grid;
+        gap: 24px;
+        min-width: 0;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      .two > * {
+        min-width: 0;
+      }
+      .panel {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--card);
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--mut);
+      }
+      h3 {
+        margin: 20px 0 10px;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 11.5px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--mut);
+      }
+
+      label {
+        display: block;
+        margin-bottom: 14px;
+        font-size: 11px;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--mut);
+      }
+      input,
+      select {
+        display: block;
+        width: 100%;
+        margin-top: 6px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #0a0d12;
+        color: var(--ink);
+        font:
+          500 15px "Plus Jakarta Sans",
+          "Segoe UI",
+          sans-serif;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      input::placeholder {
+        color: #59627a;
+      }
+      input:focus,
+      select:focus,
+      .btn:focus-visible,
+      .fab:focus-visible,
+      th[data-k]:focus-visible,
+      .links a:focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .err {
+        min-height: 20px;
+        margin: 0 0 8px;
+        font-size: 13.5px;
+        color: var(--red);
+      }
+
+      .btn {
+        padding: 10px 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card2);
+        color: var(--ink);
+        font:
+          600 14.5px "Plus Jakarta Sans",
+          "Segoe UI",
+          sans-serif;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      }
+      .btn:hover {
+        border-color: #34405a;
+        background: #171d28;
+      }
+      .btn.primary {
+        width: 100%;
+        border: 0;
+        background: var(--grad);
+        color: #04211d;
+        font-weight: 700;
+      }
+      .btn.primary:hover {
+        filter: brightness(1.08);
+      }
+      .btn.sm {
+        padding: 4px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+      }
+      .btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .hint {
+        margin: 8px 0 0;
+        font-size: 13.5px;
+        color: var(--mut);
+      }
+      .hint.top0 {
+        margin: -6px 0 14px;
+      }
+      .group {
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+      .lbl {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 11px;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--mut);
+      }
+      .inline {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+      }
+      .inline label {
+        flex: 1;
+        margin: 0;
+      }
+      .status {
+        min-height: 20px;
+        margin: 14px 0 0;
+        font-size: 12.5px;
+        color: var(--teal);
+      }
+
+      /* Slots */
+      .slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 14px;
+      }
+      .slot {
+        padding: 16px;
+        border: 1px solid rgba(46, 230, 197, 0.22);
+        border-radius: 16px;
+        background: var(--card2);
+      }
+      .slot.busy {
+        border-color: rgba(91, 140, 255, 0.5);
+        background: linear-gradient(
+          180deg,
+          rgba(91, 140, 255, 0.09),
+          var(--card2)
+        );
+        box-shadow: 0 0 24px rgba(91, 140, 255, 0.1);
+      }
+      .sh {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .sh b {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .vid {
+        margin: 8px 0 0;
+        font-weight: 700;
+      }
+      .prog {
+        height: 6px;
+        margin: 10px 0 8px;
+        border-radius: 6px;
+        background: #1b2230;
+      }
+      .prog b {
+        display: block;
+        height: 100%;
+        border-radius: 6px;
+        background: var(--grad);
+      }
+      .muted {
+        margin: 6px 0 10px;
+        font-size: 13.5px;
+        color: var(--mut);
+      }
+
+      /* Tables */
+      .scroll {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.07em;
+        text-align: left;
+        text-transform: uppercase;
+        color: var(--mut);
+        white-space: nowrap;
+      }
+      th[data-k] {
+        cursor: pointer;
+        user-select: none;
+      }
+      th[data-k]:hover {
+        color: var(--ink);
+      }
+      td {
+        padding: 11px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        white-space: nowrap;
+      }
+      tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      td.empty {
+        padding: 22px 10px;
+        color: var(--mut);
+        white-space: normal;
+      }
+      .id {
+        font-weight: 700;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 2px 10px;
+        border: 1px solid;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .p1 {
+        color: #aeb8cc;
+        border-color: #2b3548;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .p2 {
+        color: var(--amber);
+        border-color: rgba(245, 185, 74, 0.4);
+        background: rgba(245, 185, 74, 0.09);
+      }
+      .p3 {
+        color: var(--red);
+        border-color: rgba(255, 107, 122, 0.45);
+        background: rgba(255, 107, 122, 0.1);
+      }
+      .ok {
+        color: var(--teal);
+        border-color: rgba(46, 230, 197, 0.4);
+        background: rgba(46, 230, 197, 0.08);
+      }
+      .run {
+        color: #8db0ff;
+        border-color: rgba(91, 140, 255, 0.5);
+        background: rgba(91, 140, 255, 0.1);
+      }
+      .bar {
+        display: inline-block;
+        width: 46px;
+        height: 6px;
+        margin-left: 10px;
+        border-radius: 6px;
+        vertical-align: middle;
+        background: #1b2230;
+      }
+      .bar b {
+        display: block;
+        height: 100%;
+        border-radius: 6px;
+        background: var(--teal);
+      }
+      .bar.lo b {
+        background: var(--red);
+      }
+
+      /* Binary search, heap, log */
+      .out {
+        margin-top: 14px;
+        font-size: 14px;
+      }
+      .out p {
+        margin: 0 0 4px;
+      }
+      .out ol {
+        margin: 6px 0 0;
+        padding-left: 20px;
+        color: var(--mut);
+      }
+      .chip {
+        display: inline-block;
+        margin: 0 6px 6px 0;
+        padding: 5px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--card2);
+        font-size: 12.5px;
+      }
+      .chip i {
+        margin-right: 8px;
+        font-style: normal;
+        color: var(--teal);
+      }
+      .log {
+        max-height: 280px;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        list-style: none;
+        font-size: 14px;
+      }
+      .log li {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .log time {
+        margin-right: 12px;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 12.5px;
+        color: var(--teal);
+      }
+
+      /* Floating actions */
+      .fab {
+        position: fixed;
+        bottom: 22px;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px 22px;
+        border: 0;
+        border-radius: 999px;
+        font:
+          700 15px "Plus Jakarta Sans",
+          "Segoe UI",
+          sans-serif;
+        cursor: pointer;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      }
+      .fab.l {
+        left: 22px;
+        border: 1px solid var(--line);
+        background: rgba(17, 21, 29, 0.92);
+        color: var(--ink);
+      }
+      .fab.r {
+        right: 22px;
+        background: var(--grad);
+        color: #04211d;
+      }
+      .fab:hover {
+        filter: brightness(1.1);
+      }
+
+      @media (max-width: 980px) {
+        .layout,
+        .two {
+          grid-template-columns: 1fr;
+        }
+        .kpis {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .kpi {
+          border-bottom: 1px solid var(--line);
+        }
+      }
+      @media (max-width: 560px) {
+        .wrap {
+          padding: 0 16px;
+        }
+        .nav .pill {
+          display: none;
+        }
+        .panel {
+          padding: 18px;
+        }
+        .fab {
+          padding: 11px 16px;
+          font-size: 14px;
+          bottom: 14px;
+        }
+        .fab.l {
+          left: 12px;
+        }
+        .fab.r {
+          right: 12px;
+        }
+      }
+
+      .page[hidden] {
+        display: none !important;
+      }
+      .layout.rev {
+        grid-template-columns: 1fr 330px;
+      }
+      .narrow {
+        max-width: 760px;
+      }
+      .cta {
+        padding: 12px 22px;
+        border: 0;
+        background: var(--grad);
+        color: #04211d;
+        font-weight: 700;
+      }
+      .crumb a {
+        color: var(--mut);
+        text-decoration: none;
+      }
+      .crumb a:hover {
+        color: var(--ink);
+      }
+      .crumb b {
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .links a {
+        position: relative;
+        padding: 26px 0;
+      }
+      .links a.on {
+        color: #fff;
+      }
+      .links a.on::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: var(--grad);
+      }
+      .rules {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--mut);
+      }
+      .rules li {
+        margin-bottom: 12px;
+      }
+      .rules b {
+        color: var(--ink);
+      }
+      a.fab {
+        text-decoration: none;
+      }
+      .full .log {
+        max-height: none;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        z-index: 40;
+        max-width: min(520px, 90vw);
+        padding: 12px 20px;
+        border: 1px solid rgba(46, 230, 197, 0.4);
+        border-radius: 12px;
+        background: #0f1822;
+        color: var(--ink);
+        font-size: 14px;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 14px);
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      @media (max-width: 980px) {
+        .layout.rev {
+          grid-template-columns: 1fr;
+        }
+        .nav .wrap {
+          flex-wrap: wrap;
+          height: auto;
+          padding-top: 12px;
+          padding-bottom: 0;
+          gap: 12px;
+        }
+        .brand {
+          margin-right: auto;
+        }
+        .links {
+          order: 3;
+          width: 100%;
+          margin: 0;
+          gap: 22px;
+          overflow-x: auto;
+        }
+        .links a {
+          padding: 10px 0;
+          white-space: nowrap;
+        }
+      }
+      @media (max-width: 560px) {
+        .toast {
+          bottom: 76px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap">
+        <a class="brand" href="#/dashboard">
+          <span class="logo"
+            ><svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="#04211d"
+              aria-hidden="true"
+            >
+              <path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg
+          ></span>
+          SlotCharge
+        </a>
+        <nav class="links" aria-label="Pages">
+          <a href="#/dashboard" data-p="dashboard">Dashboard</a>
+          <a href="#/register" data-p="register">Register vehicle</a>
+          <a href="#/queue" data-p="queue">Queue</a>
+          <a href="#/sequence" data-p="sequence">Sequence</a>
+          <a href="#/search" data-p="search">Slot search</a>
+          <a href="#/log" data-p="log">Event log</a>
+        </nav>
+        <div class="pill">Station time <b id="clock">08:30</b></div>
+        <button class="btn cta" data-act="alloc">Allocate next</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="wrap">
+        <div class="crumb">
+          <a href="#/dashboard">Home</a><span>&rsaquo;</span
+          ><b id="crumbHere">Dashboard</b>
+        </div>
+        <h1 id="heroTitle"></h1>
+        <p id="heroText"></p>
+      </div>
+    </section>
+
+    <main>
+      <div class="wrap">
+        <div class="page" data-page="dashboard">
+          <section
+            class="kpis"
+            id="kpis"
+            aria-label="Station summary"
+          ></section>
+          <div class="layout rev">
+            <section class="panel">
+              <h2>Charging slots</h2>
+              <div class="slots" id="slots"></div>
+            </section>
+            <div class="panel">
+              <h2>Station controls</h2>
+              <button class="btn primary" data-act="alloc">
+                Allocate next vehicle
+              </button>
+              <p class="hint">
+                Takes the top vehicle from the heap and gives it the
+                lowest-numbered free slot.
+              </p>
+              <div class="group">
+                <span class="lbl">Advance the clock</span>
+                <div class="btns">
+                  <button class="btn" data-adv="15">15 min</button>
+                  <button class="btn" data-adv="30">30 min</button>
+                  <button class="btn" data-adv="60">60 min</button>
+                </div>
+                <p class="hint">
+                  Finished slots are released and waiting vehicles are allocated
+                  automatically.
+                </p>
+              </div>
+              <form id="slotForm" class="group inline">
+                <label
+                  >Number of slots
+                  <input
+                    id="slotCount"
+                    type="number"
+                    min="1"
+                    max="8"
+                    value="3"
+                  />
+                </label>
+                <button class="btn" type="submit">Apply</button>
+              </form>
+              <div class="btns group">
+                <button class="btn" data-act="sample">
+                  Load sample vehicles
+                </button>
+                <button class="btn" data-act="reset">Reset station</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" data-page="register" hidden>
+          <div class="layout">
+            <form id="addForm" class="panel" novalidate>
+              <h2>Vehicle details</h2>
+              <label
+                >Vehicle ID
+                <input
+                  id="vid"
+                  placeholder="e.g. EV-1007"
+                  maxlength="16"
+                  autocomplete="off"
+                />
+              </label>
+              <div class="row2">
+                <label
+                  >Battery (%)
+                  <input id="bat" type="number" min="1" max="100" value="20" />
+                </label>
+                <label
+                  >Charge time (min)
+                  <input
+                    id="dur"
+                    type="number"
+                    min="5"
+                    max="600"
+                    step="5"
+                    value="45"
+                  />
+                </label>
+              </div>
+              <div class="row2">
+                <label
+                  >Arrival time
+                  <input id="arr" type="time" value="08:30" />
+                </label>
+                <label
+                  >Priority
+                  <select id="pri">
+                    <option value="1">Normal</option>
+                    <option value="2">High</option>
+                    <option value="3">Emergency</option>
+                  </select>
+                </label>
+              </div>
+              <p class="err" id="err" role="alert"></p>
+              <button class="btn primary" type="submit">Add to queue</button>
+            </form>
+            <section class="panel">
+              <h2>How the queue is ordered</h2>
+              <ol class="rules">
+                <li>
+                  <b>Priority.</b> Emergency vehicles go first, then high, then
+                  normal.
+                </li>
+                <li>
+                  <b>Battery level.</b> Within the same priority, the lower
+                  battery is served first.
+                </li>
+                <li>
+                  <b>Arrival time.</b> If both match, the vehicle that arrived
+                  earlier is served first.
+                </li>
+                <li>
+                  <b>Waiting time</b> is the time a slot is allocated minus the
+                  arrival time.
+                </li>
+              </ol>
+            </section>
+          </div>
+        </div>
+
+        <div class="page" data-page="queue" hidden>
+          <div class="col">
+            <section class="panel">
+              <h2>Waiting vehicles</h2>
+              <p class="hint top0">
+                Click a column heading to re-sort the view. The order column
+                always shows the true service order.
+              </p>
+              <div class="scroll" id="queue"></div>
+            </section>
+            <section class="panel">
+              <h2>Heap array</h2>
+              <div id="heap"></div>
+            </section>
+          </div>
+        </div>
+
+        <div class="page" data-page="sequence" hidden>
+          <section class="panel">
+            <h2>Allocated vehicles</h2>
+            <div class="scroll" id="seq"></div>
+          </section>
+        </div>
+
+        <div class="page" data-page="search" hidden>
+          <section class="panel narrow">
+            <h2>Binary search on free slots</h2>
+            <form id="lookup" class="inline">
+              <label
+                >Slot number
+                <input id="slotNo" type="number" min="1" max="8" value="2" />
+              </label>
+              <button class="btn" type="submit">Search</button>
+            </form>
+            <div id="lookupOut" class="out"></div>
+          </section>
+        </div>
+
+        <div class="page" data-page="log" hidden>
+          <section class="panel full">
+            <h2>Station events</h2>
+            <ul class="log" id="log"></ul>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <a class="fab l" href="#/register">Add vehicle</a>
+    <button class="fab r" data-adv="15">Advance 15 min</button>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      "use strict";
+      /* EV Charging Slot Allocation System
+   Data structures and algorithms used:
+   - Binary max-heap (priority queue): insert, extract top, delete by ID
+   - Merge sort: ordering the queue view by any column
+   - Binary search: locating a slot number in the sorted list of free slots */
+
+      const PRIORITY = { 1: "Normal", 2: "High", 3: "Emergency" };
+      const $ = (s) => document.querySelector(s);
+      const fmt = (m) =>
+        String(Math.floor(m / 60) % 24).padStart(2, "0") +
+        ":" +
+        String(m % 60).padStart(2, "0");
+      const toMin = (t) => {
+        const [h, m] = t.split(":").map(Number);
+        return h * 60 + m;
+      };
+      const esc = (s) =>
+        s.replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+
+      /* ---------- Priority queue (binary max-heap) ---------- */
+      class PriorityQueue {
+        constructor() {
+          this.a = [];
+        }
+        // true when x must be served before y
+        static before(x, y) {
+          if (x.pr !== y.pr) return x.pr > y.pr; // higher priority first
+          if (x.bat !== y.bat) return x.bat < y.bat; // then lower battery
+          return x.arr < y.arr; // then earlier arrival
+        }
+        get size() {
+          return this.a.length;
+        }
+        up(i) {
+          const a = this.a;
+          while (i > 0) {
+            const p = (i - 1) >> 1;
+            if (!PriorityQueue.before(a[i], a[p])) break;
+            [a[i], a[p]] = [a[p], a[i]];
+            i = p;
+          }
+        }
+        down(i) {
+          const a = this.a,
+            n = a.length;
+          for (;;) {
+            let b = i;
+            const l = 2 * i + 1,
+              r = l + 1;
+            if (l < n && PriorityQueue.before(a[l], a[b])) b = l;
+            if (r < n && PriorityQueue.before(a[r], a[b])) b = r;
+            if (b === i) return;
+            [a[i], a[b]] = [a[b], a[i]];
+            i = b;
+          }
+        }
+        insert(v) {
+          this.a.push(v);
+          this.up(this.a.length - 1);
+        }
+        extract() {
+          const a = this.a;
+          if (!a.length) return null;
+          const top = a[0],
+            last = a.pop();
+          if (a.length) {
+            a[0] = last;
+            this.down(0);
+          }
+          return top;
+        }
+        remove(id) {
+          const i = this.a.findIndex((v) => v.id === id);
+          if (i < 0) return null;
+          const v = this.a[i],
+            last = this.a.pop();
+          if (i < this.a.length) {
+            this.a[i] = last;
+            this.up(i);
+            this.down(i);
+          }
+          return v;
+        }
+      }
+
+      /* ---------- Merge sort ---------- */
+      function mergeSort(arr, cmp) {
+        if (arr.length < 2) return arr.slice();
+        const mid = arr.length >> 1,
+          L = mergeSort(arr.slice(0, mid), cmp),
+          R = mergeSort(arr.slice(mid), cmp),
+          out = [];
+        let i = 0,
+          j = 0;
+        while (i < L.length && j < R.length)
+          out.push(cmp(L[i], R[j]) <= 0 ? L[i++] : R[j++]);
+        return out.concat(L.slice(i), R.slice(j));
+      }
+
+      /* ---------- Binary search (sorted ascending array) ---------- */
+      function binarySearch(arr, target) {
+        let lo = 0,
+          hi = arr.length - 1;
+        const trace = [];
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          trace.push(
+            `Range ${lo} to ${hi}, middle index ${mid} holds slot ${arr[mid]}`,
+          );
+          if (arr[mid] === target) return { idx: mid, trace };
+          if (arr[mid] < target) lo = mid + 1;
+          else hi = mid - 1;
+        }
+        return { idx: -1, trace };
+      }
+
+      /* ---------- Station state ---------- */
+      const S = {
+        clock: 510,
+        slots: [],
+        pq: new PriorityQueue(),
+        seq: [],
+        log: [],
+        all: new Set(),
+        sort: { key: "rank", dir: 1 },
+      };
+      const freeSlots = () => S.slots.filter((s) => !s.v).map((s) => s.no);
+      let toastTimer;
+      const say = (m) => {
+        const t = $("#toast");
+        clearTimeout(toastTimer);
+        t.textContent = m;
+        t.classList.toggle("show", !!m);
+        toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+      };
+      const note = (m) => {
+        S.log.unshift({ t: S.clock, m });
+        if (S.log.length > 60) S.log.pop();
+      };
+
+      function setSlots(n) {
+        while (S.slots.length < n)
+          S.slots.push({ no: S.slots.length + 1, v: null, start: 0, end: 0 });
+        while (S.slots.length > n) {
+          if (S.slots[S.slots.length - 1].v)
+            return say(
+              `Slot ${S.slots.length} is in use. Release it before reducing the number of slots.`,
+            );
+          S.slots.pop();
+        }
+        say(`Station now has ${S.slots.length} slot(s).`);
+      }
+
+      function addVehicle(v) {
+        S.pq.insert(v);
+        S.all.add(v.id);
+        note(
+          `${v.id} added to the queue (${PRIORITY[v.pr]}, ${v.bat}% battery)`,
+        );
+      }
+
+      function allocate() {
+        const slot = S.slots.find((s) => !s.v); // slots are numbered in ascending order
+        if (!slot || !S.pq.size) return false;
+        const v = S.pq.extract();
+        const start = Math.max(S.clock, v.arr);
+        Object.assign(slot, { v, start, end: start + v.dur });
+        S.seq.push({
+          v,
+          slot: slot.no,
+          start,
+          end: slot.end,
+          wait: start - v.arr,
+        });
+        note(
+          `${v.id} allocated to slot ${slot.no}, waited ${start - v.arr} min`,
+        );
+        return true;
+      }
+
+      function release(no) {
+        const s = S.slots.find((x) => x.no === no);
+        if (!s || !s.v) return;
+        const rec = S.seq.find((r) => r.v === s.v);
+        if (rec) rec.end = Math.min(rec.end, Math.max(S.clock, rec.start));
+        note(`Slot ${no} released by ${s.v.id}`);
+        s.v = null;
+      }
+
+      function advance(min) {
+        S.clock += min;
+        S.slots.forEach((s) => {
+          if (s.v && s.end <= S.clock) release(s.no);
+        });
+        let n = 0;
+        while (allocate()) n++;
+        $("#arr").value = fmt(S.clock);
+        say(`Clock advanced by ${min} min. ${n} vehicle(s) allocated.`);
+      }
+
+      function resetStation() {
+        const n = S.slots.length || 3;
+        Object.assign(S, {
+          clock: 510,
+          slots: [],
+          pq: new PriorityQueue(),
+          seq: [],
+          log: [],
+          all: new Set(),
+        });
+        setSlots(n);
+        $("#arr").value = fmt(S.clock);
+        say("Station reset.");
+      }
+
+      function loadSample() {
+        const rows = [
+          ["EV-1001", 18, 45, "08:05", 2],
+          ["EV-1002", 62, 30, "08:10", 1],
+          ["EV-1003", 9, 60, "08:12", 3],
+          ["EV-1004", 35, 40, "08:15", 1],
+          ["EV-1005", 12, 50, "08:20", 2],
+          ["EV-1006", 80, 20, "08:25", 1],
+        ];
+        rows.forEach(([id, bat, dur, arr, pr]) => {
+          if (!S.all.has(id)) addVehicle({ id, bat, dur, arr: toMin(arr), pr });
+        });
+        say("Sample vehicles loaded.");
+      }
+
+      /* ---------- Rendering ---------- */
+      const SORT_KEYS = {
+        rank: (a, b) => (PriorityQueue.before(a, b) ? -1 : 1),
+        id: (a, b) => a.id.localeCompare(b.id),
+        pr: (a, b) => b.pr - a.pr,
+        bat: (a, b) => a.bat - b.bat,
+        arr: (a, b) => a.arr - b.arr,
+        dur: (a, b) => a.dur - b.dur,
+      };
+
+      function render() {
+        $("#clock").textContent = fmt(S.clock);
+
+        const total = S.slots.length,
+          free = freeSlots().length;
+        const avg = S.seq.length
+          ? Math.round(S.seq.reduce((t, r) => t + r.wait, 0) / S.seq.length)
+          : 0;
+        $("#kpis").innerHTML = [
+          ["Free slots", `${free} of ${total}`],
+          ["Vehicles charging", total - free],
+          ["Waiting in queue", S.pq.size],
+          ["Vehicles served", S.seq.length],
+          ["Average waiting time", `${avg} min`],
+        ]
+          .map(
+            ([l, v]) => `<div class="kpi"><span>${l}</span><b>${v}</b></div>`,
+          )
+          .join("");
+
+        $("#slots").innerHTML = S.slots
+          .map((s) => {
+            if (!s.v)
+              return `<div class="slot"><div class="sh"><b>Slot ${s.no}</b><span class="tag ok">Free</span></div><p class="muted">Ready for the next vehicle</p></div>`;
+            const pct = Math.max(
+              0,
+              Math.min(100, ((S.clock - s.start) / s.v.dur) * 100),
+            );
+            return `<div class="slot busy"><div class="sh"><b>Slot ${s.no}</b><span class="tag run">Charging</span></div>
+      <p class="vid">${esc(s.v.id)}</p><div class="prog"><b style="width:${pct}%"></b></div>
+      <p class="muted">${fmt(s.start)} to ${fmt(s.end)}, ${Math.max(0, s.end - S.clock)} min left</p>
+      <button class="btn sm" data-rel="${s.no}">Release slot</button></div>`;
+          })
+          .join("");
+
+        const rank = new Map(
+          mergeSort(S.pq.a, SORT_KEYS.rank).map((v, i) => [v.id, i + 1]),
+        );
+        const rows = mergeSort(
+          S.pq.a,
+          (a, b) => SORT_KEYS[S.sort.key](a, b) * S.sort.dir,
+        );
+        const cols = [
+          ["rank", "Order"],
+          ["id", "Vehicle"],
+          ["pr", "Priority"],
+          ["bat", "Battery"],
+          ["arr", "Arrival"],
+          ["dur", "Charging time"],
+        ];
+        const head = cols
+          .map(
+            ([k, l]) =>
+              `<th data-k="${k}" tabindex="0">${l}${S.sort.key === k ? (S.sort.dir > 0 ? " \u2191" : " \u2193") : ""}</th>`,
+          )
+          .join("");
+        $("#queue").innerHTML =
+          `<table><thead><tr>${head}<th></th></tr></thead><tbody>${
+            rows.length
+              ? rows
+                  .map(
+                    (v) =>
+                      `<tr><td>${rank.get(v.id)}</td><td class="id">${esc(v.id)}</td><td><span class="tag p${v.pr}">${PRIORITY[v.pr]}</span></td>
+     <td>${v.bat}%<span class="bar${v.bat < 20 ? " lo" : ""}"><b style="width:${v.bat}%"></b></span></td>
+     <td>${fmt(v.arr)}</td><td>${v.dur} min</td><td><button class="btn sm" data-rm="${esc(v.id)}">Remove</button></td></tr>`,
+                  )
+                  .join("")
+              : '<tr><td class="empty" colspan="7">No vehicles are waiting. Register a vehicle or load the sample vehicles.</td></tr>'
+          }</tbody></table>`;
+
+        $("#seq").innerHTML =
+          `<table><thead><tr><th>Sequence</th><th>Vehicle</th><th>Slot</th><th>Start</th><th>End</th><th>Waiting time</th><th>Status</th></tr></thead><tbody>${
+            S.seq.length
+              ? S.seq
+                  .map(
+                    (r, i) =>
+                      `<tr><td>${i + 1}</td><td class="id">${esc(r.v.id)}</td><td>${r.slot}</td><td>${fmt(r.start)}</td><td>${fmt(r.end)}</td><td>${r.wait} min</td>
+     <td>${S.slots.some((s) => s.v === r.v) ? '<span class="tag run">Charging</span>' : '<span class="tag ok">Completed</span>'}</td></tr>`,
+                  )
+                  .join("")
+              : '<tr><td class="empty" colspan="7">No vehicle has been allocated yet. Use Allocate next vehicle.</td></tr>'
+          }</tbody></table>`;
+
+        $("#heap").innerHTML = S.pq.a.length
+          ? S.pq.a
+              .map(
+                (v, i) => `<span class="chip"><i>${i}</i>${esc(v.id)}</span>`,
+              )
+              .join("")
+          : '<p class="muted">The heap is empty.</p>';
+        $("#log").innerHTML = S.log.length
+          ? S.log
+              .map((e) => `<li><time>${fmt(e.t)}</time>${esc(e.m)}</li>`)
+              .join("")
+          : '<li class="muted">No events yet.</li>';
+      }
+
+      /* ---------- Events ---------- */
+      $("#addForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const id = $("#vid").value.trim().toUpperCase(),
+          bat = +$("#bat").value,
+          dur = +$("#dur").value,
+          arr = $("#arr").value;
+        let msg = "";
+        if (!/^[A-Z0-9-]{3,16}$/.test(id))
+          msg = "Vehicle ID needs 3 to 16 letters, digits or hyphens.";
+        else if (S.all.has(id)) msg = `${id} is already registered.`;
+        else if (!(bat >= 1 && bat <= 100))
+          msg = "Battery must be between 1 and 100.";
+        else if (!(dur >= 5 && dur <= 600))
+          msg = "Charging time must be between 5 and 600 minutes.";
+        else if (!arr) msg = "Enter the arrival time.";
+        $("#err").textContent = msg;
+        if (msg) return;
+        addVehicle({
+          id,
+          bat: Math.round(bat),
+          dur: Math.round(dur),
+          arr: toMin(arr),
+          pr: +$("#pri").value,
+        });
+        $("#vid").value = "";
+        say(`${id} added to the queue.`);
+        render();
+      });
+
+      $("#slotForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const n = Math.round(+$("#slotCount").value);
+        if (n >= 1 && n <= 8) setSlots(n);
+        else say("Choose between 1 and 8 slots.");
+        render();
+      });
+
+      $("#lookup").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const t = Math.round(+$("#slotNo").value),
+          f = freeSlots(),
+          r = binarySearch(f, t);
+        $("#lookupOut").innerHTML =
+          `<p><b>${r.idx >= 0 ? `Slot ${t} is free (found at index ${r.idx}).` : `Slot ${t} is not free or does not exist.`}</b></p>
+    <p class="muted">Free slots searched: ${f.length ? f.join(", ") : "none"}</p><ol>${r.trace.map((x) => `<li>${x}</li>`).join("")}</ol>`;
+      });
+
+      document.addEventListener("click", (e) => {
+        const t = e.target.closest(
+          "[data-act],[data-adv],[data-rel],[data-rm],[data-k]",
+        );
+        if (!t) return;
+        const d = t.dataset;
+        if (d.act === "alloc")
+          say(
+            allocate()
+              ? "Vehicle allocated."
+              : S.pq.size
+                ? "No free slot. Release a slot or advance the clock."
+                : "The queue is empty.",
+          );
+        else if (d.act === "sample") loadSample();
+        else if (d.act === "reset") resetStation();
+        else if (d.adv) advance(+d.adv);
+        else if (d.rel) {
+          release(+d.rel);
+          say(`Slot ${d.rel} released.`);
+        } else if (d.rm) {
+          S.pq.remove(d.rm);
+          S.all.delete(d.rm);
+          note(`${d.rm} removed from the queue`);
+          say(`${d.rm} removed.`);
+        } else if (d.k) {
+          S.sort = { key: d.k, dir: S.sort.key === d.k ? -S.sort.dir : 1 };
+        }
+        render();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.matches("th[data-k]"))
+          e.target.click();
+      });
+
+      /* ---------- Start ---------- */
+      setSlots(3);
+      say("");
+      loadSample();
+      note("Station opened with 3 slots");
+      render();
+
+      /* ---------- Page routing (#/page) ---------- */
+      const PAGES = {
+        dashboard: [
+          "Dashboard",
+          "Charging slots, allocated <em>by priority</em>",
+          "Live view of every slot, with controls for allocating vehicles and moving the station clock.",
+        ],
+        register: [
+          "Register vehicle",
+          "Register a <em>vehicle</em>",
+          "Add an arriving vehicle to the priority queue with its battery level, charging time and priority.",
+        ],
+        queue: [
+          "Queue",
+          "Waiting <em>queue</em>",
+          "Vehicles waiting for a slot, in service order. The heap array shows how they are stored.",
+        ],
+        sequence: [
+          "Sequence",
+          "Charging <em>sequence</em>",
+          "The order in which vehicles were allocated, with the slot used and each waiting time.",
+        ],
+        search: [
+          "Slot search",
+          "Find a <em>free slot</em>",
+          "Binary search over the sorted list of free slots, with every step shown.",
+        ],
+        log: [
+          "Event log",
+          "Station <em>event log</em>",
+          "A timeline of everything that has happened at the station.",
+        ],
+      };
+      function route() {
+        const h = location.hash.replace(/^#\/?/, "");
+        const k = PAGES[h] ? h : "dashboard";
+        document.querySelectorAll(".page").forEach((p) => {
+          p.hidden = p.dataset.page !== k;
+        });
+        document
+          .querySelectorAll(".links a")
+          .forEach((a) => a.classList.toggle("on", a.dataset.p === k));
+        $("#heroTitle").innerHTML = PAGES[k][1];
+        $("#heroText").textContent = PAGES[k][2];
+        $("#crumbHere").textContent = PAGES[k][0];
+        document.title = PAGES[k][0] + " | EV Charging Slot Allocation System";
+        window.scrollTo(0, 0);
+      }
+      window.addEventListener("hashchange", route);
+      route();
+    </script>
+  </body>
+</html>
